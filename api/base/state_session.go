@@ -122,7 +122,7 @@ func NewStateSession(gateway string, compressed int) *StateSession {
 		},
 		fsm.Callbacks{
 			"enter_state": func(_ context.Context, e *fsm.Event) {
-				log.WithField("from", e.Src).WithField("to", e.Dst).Info("state change")
+				log.WithField("from", e.Src).WithField("to", e.Dst).Debug("state change")
 			},
 			EventEnterPrefix + StatusInit: func(_ context.Context, e *fsm.Event) {
 				s.Retry(e, func() error { return s.GetGateway() }, nil)
@@ -166,7 +166,7 @@ func (s *StateSession) Start() {
 }
 
 func (s *StateSession) GetGateway() error {
-	log.Info("state", "getGateway")
+	log.Debug("state", "getGateway")
 	s.Trigger("status_getGateWay", nil)
 	err, gateWay := s.NetworkProxy.ReqGateWay()
 
@@ -234,7 +234,7 @@ func (s *StateSession) Retry(e *fsm.Event, handler func() error, errHandler func
 }
 
 func (s *StateSession) getGateWayOK(gateWay string) {
-	log.WithField("gateway", gateWay).Info("GetGatewayOk")
+	log.WithField("gateway", gateWay).Debug("GetGatewayOk")
 	s.GateWay = gateWay
 	err := s.FSM.Event(context.Background(), EventGotGateway)
 	if err != nil {
@@ -257,7 +257,7 @@ func (s *StateSession) wsConnectFail() error {
 }
 
 func (s *StateSession) wsConnectOk() {
-	log.Info("wsConnectOk")
+	log.Debug("wsConnectOk")
 	err := s.FSM.Event(context.Background(), EventWsConnected)
 	if err != nil {
 		log.Error(err)
@@ -281,7 +281,7 @@ func (s *StateSession) receiveHello(frameMap *event2.FrameMap) {
 	}
 	if code == 0 {
 		s.LastPongAt = time.Now()
-		log.Info("receiveHello")
+		log.Debug("receiveHello")
 		s.SaveSessionId(frameMap.Data["sessionId"].(string))
 		s.FSM.Event(context.Background(), EventHelloReceived)
 	} else {
@@ -351,7 +351,7 @@ func (s *StateSession) SendHeartBeat() error {
 			return err
 		}
 		s.LastPingAt = time.Now()
-		log.WithField("ping", string(data)).Info("Send Ping")
+		log.WithField("ping", string(data)).Debug("Send Ping")
 		err = s.NetworkProxy.SendData(data)
 		if err != nil {
 			log.WithField("err", err).Error("SendHeartBeat failed!")
@@ -376,19 +376,19 @@ func (s *StateSession) RetryHeartbeat() error {
 }
 
 func (s *StateSession) receivePong(frame *event2.FrameMap) {
-	log.Infof("receivePong %+v", frame)
+	log.Debugf("receivePong %+v", frame)
 	s.FSM.Event(context.Background(), EventPongReceived)
 	s.LastPongAt = time.Now()
 }
 
 func (s *StateSession) StartCheckHeartbeat() {
-	log.Info("Start heartBeatTimeout check")
+	log.Debug("Start heartBeatTimeout check")
 	go func() { //nolint:wsl
 		for {
 			select {
 			case pongTimeoutAt := <-s.PongTimeoutChan:
 				{
-					log.WithField("pongTimeoutAt", pongTimeoutAt).WithField("state", s.FSM.Current()).Info("Pong收取超时检测开始")
+					log.WithField("pongTimeoutAt", pongTimeoutAt).WithField("state", s.FSM.Current()).Debug("Pong收取超时检测开始")
 					if s.FSM.Current() != StatusConnected && s.FSM.Current() != StatusRetry {
 						continue
 					}
@@ -426,7 +426,7 @@ func (s *StateSession) StartCheckHeartbeat() {
 
 func (s *StateSession) ResumeOk() {
 	s.Trigger("status_resumeOk", nil)
-	log.Info("resumeOk")
+	log.Debug("resumeOk")
 	if s.FSM.Current() != StatusConnected {
 		s.FSM.Event(context.Background(), EventResumeReceivedOk)
 	}

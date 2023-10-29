@@ -93,9 +93,9 @@ func (ws *WebSocketSession) ConnectWebsocket(gateway string) error {
 	if ws.SessionId != "" {
 		gateway += "&" + fmt.Sprintf("sn=%d&sessionId=%s&resume=1", ws.MaxSn, ws.SessionId)
 	}
-	log.WithField("gateway", gateway).Info("ConnectWebsocket")
+	log.WithField("gateway", gateway).Debug("ConnectWebsocket")
 	c, resp, err := websocket.DefaultDialer.Dial(gateway, nil)
-	log.Infof("webscoket dial resp:%+v", resp)
+	log.Debugf("webscoket dial resp:%+v", resp)
 	if err != nil {
 		log.WithError(err).Error("ConnectWebsocket Dial")
 		return err
