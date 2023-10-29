@@ -149,6 +149,10 @@ func (ws *WebSocketSession) SaveSessionId(sessionId string) error {
 
 func (ws *WebSocketSession) Start() {
 	ws.StateSession.Start()
+	defer ws.HeartBeatCron.Stop()
+	defer func() {
+		_ = ws.Close()
+	}()
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	for {

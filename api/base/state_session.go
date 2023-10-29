@@ -89,6 +89,7 @@ type StateSession struct {
 	LastPongAt      time.Time
 	LastPingAt      time.Time
 	PongTimeoutChan chan time.Time
+	StopChan        chan struct{} // close StopChan to stop internal loop
 }
 
 func NewStateSession(gateway string, compressed int) *StateSession {
@@ -150,6 +151,7 @@ func NewStateSession(gateway string, compressed int) *StateSession {
 	})
 	s.Timeout = 7
 	s.PongTimeoutChan = make(chan time.Time, 10)
+	s.StopChan = make(chan struct{})
 	return s
 }
 
@@ -163,6 +165,15 @@ func (s *StateSession) Start() {
 		s.Retry(nil, func() error { return s.WsConnect() }, func() error { return s.wsConnectFail() })
 	}
 	s.StartProcessEvent()
+}
+
+func (s *StateSession) Close() error {
+	select {
+	case <-s.StopChan:
+	default:
+		close(s.StopChan)
+	}
+	return nil
 }
 
 func (s *StateSession) GetGateway() error {
@@ -303,6 +314,8 @@ func (s *StateSession) StartProcessEvent() {
 			select {
 			case frame := <-s.RecvQueue:
 				s.ReceiveFrame(frame)
+			case <-s.StopChan:
+				return
 			}
 		}
 	}()
