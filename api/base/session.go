@@ -61,7 +61,7 @@ func (s *Session) ReceiveData(data []byte) (error, []byte) {
 		}
 	}
 	frame := event2.ParseFrameMapByData(data)
-	log.WithField("frame", frame).Info("Receive frame from server")
+	log.WithField("frame", frame).Debug("Receive frame from server")
 	if frame != nil {
 		if s.ReceiveFrameHandler != nil {
 			return s.ReceiveFrameHandler(frame)
